@@ -1,0 +1,6 @@
+PyPDF2
+fastapi
+uvicorn
+python-multipart
+playwright
+jdatetime

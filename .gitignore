@@ -1,0 +1,15 @@
+# Environments
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# Local / Sensitive Configurations
+sana_config.json
+config.json
+.scan_cache.json
+debug_regex_fallback.py
+
+# Sensitive Client Documents
+clients/
+*.pdf

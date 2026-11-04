@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دستیار وکیل هوشمند | مدیریت پرونده‌ها</title>
+    <!-- Google Fonts: Vazirmatn for Persian, Inter for UI elements -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Vazirmatn:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div id="topRightNotificationContainer" class="top-right-notification-container"></div>
+    <div class="app-container">
+        <!-- Top Navigation Bar -->
+        <header class="app-header">
+            <div class="header-logo">
+                <i data-lucide="scale" class="logo-icon"></i>
+                <div class="logo-text">
+                    <h1>دستیار وکیل هوشمند</h1>
+                    <span>سیستم خودکار مدیریت پرونده و قرارداد</span>
+                </div>
+            </div>
+            
+            <!-- Smart Assistant Dropdown -->
+            <div class="smart-assistant-container">
+                <button id="smartAssistantBtn" class="btn-primary" style="background-color: var(--warning-color); border-color: var(--warning-color); color: var(--bg-color);">
+                    <i data-lucide="bot"></i>
+                    <span>دستیار هوشمند</span>
+                </button>
+                <div id="smartAssistantMenu" class="dropdown-menu" style="display: none;">
+                    <button id="autoDownloadContractsBtn" class="dropdown-item">
+                        <i data-lucide="download-cloud"></i>
+                        <span>دریافت خودکار قرارداد الکترونیک</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Workspace Directory Manager -->
+            <div class="workspace-bar">
+                <i data-lucide="folder-search" class="ws-icon"></i>
+                <span class="ws-label">پوشه کاری:</span>
+                <input type="text" id="workspacePathInput" readonly title="برای تغییر مسیر کلیک کنید" placeholder="در حال بارگذاری مسیر...">
+                <button id="changeWorkspaceBtn" title="تغییر پوشه کاری">
+                    <i data-lucide="edit-3"></i>
+                    <span>تغییر مسیر</span>
+                </button>
+                <button id="refreshWorkspaceBtn" title="به‌روزرسانی">
+                    <i data-lucide="rotate-cw"></i>
+                </button>
+                <button id="automationSettingsBtn" title="تنظیمات اتوماسیون">
+                    <i data-lucide="settings"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Layout Split -->
+        <div class="app-content">
+            <!-- Sidebar: Clients list & Search -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="search-box">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="searchClientInput" placeholder="جستجوی موکل (نام یا کد ملی)...">
+                    </div>
+                    <button id="newClientBtn" class="btn-primary">
+                        <i data-lucide="folder-plus"></i>
+                        <span>ایجاد پوشه موکل جدید</span>
+                    </button>
+                    <button id="updateAllClientsBtn" class="btn-primary" style="background-color: var(--success); border-color: var(--success); width: 100%; margin-top: 4px;">
+                        <i data-lucide="refresh-cw"></i>
+                        <span>به‌روزرسانی همه موکلین</span>
+                    </button>
+                    <button id="goHomeBtn" class="btn-outline" style="width: 100%; margin-top: 4px;">
+                        <i data-lucide="home"></i>
+                        <span>صفحه نخست (بارگذاری فایل)</span>
+                    </button>
+                </div>
+                
+                <div class="client-list-container">
+                    <div class="section-title">
+                        <span>موکلین و پرونده‌ها</span>
+                        <span id="clientCountBadge" class="badge">0</span>
+                    </div>
+                    <ul id="clientList" class="client-list">
+                        <!-- Client list items will be injected here dynamically -->
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                            <span>در حال بارگذاری موکلین...</span>
+                        </div>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Main Work Area -->
+            <main class="main-panel">
+                <!-- Toast Notifications -->
+                <div id="toastContainer" class="toast-container"></div>
+
+                <!-- Empty State / Global Drag & Drop Zone -->
+                <div id="emptyState" class="empty-state">
+                    <div id="dropZone" class="drop-zone">
+                        <input type="file" id="pdfFileInput" accept=".pdf" multiple style="display: none;">
+                        <div class="drop-zone-content">
+                            <i data-lucide="file-up" class="drop-icon"></i>
+                            <h3>بارگذاری و پردازش قرارداد PDF</h3>
+                            <p>فایل PDF قرارداد را به اینجا بکشید و رها کنید، یا برای انتخاب فایل کلیک کنید.</p>
+                            <span class="drop-hint">سیستم پس از پردازش، خودکار پوشه موکل را ساخته و اطلاعات را استخراج می‌کند.</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-overview">
+                        <div class="stat-card">
+                            <i data-lucide="users" class="stat-icon clients-color"></i>
+                            <div class="stat-info">
+                                <span class="stat-value" id="totalClientsCount">0</span>
+                                <span class="stat-label">تعداد کل موکلین</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i data-lucide="file-text" class="stat-icon files-color"></i>
+                            <div class="stat-info">
+                                <span class="stat-value" id="totalFilesCount">0</span>
+                                <span class="stat-label">تعداد کل فایل‌ها</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Client Dashboard -->
+                <div id="clientDashboard" class="client-dashboard" style="display: none;">
+                    <div class="dashboard-header">
+                        <div class="client-title-area">
+                            <i data-lucide="folder" class="folder-icon"></i>
+                            <div>
+                                <h2 id="activeClientTitle">نام موکل</h2>
+                                <span class="client-subtitle" id="activeClientSubtitle">پوشه موکل در سیستم</span>
+                            </div>
+                        </div>
+                        <div class="dashboard-actions">
+                            <button id="downloadClientDocsBtn" class="btn-primary" style="background-color: var(--primary); border-color: var(--primary);" title="دانلود کلیه لوایح موکل">
+                                <i data-lucide="download"></i>
+                                <span>دانلود لوایح موکل</span>
+                            </button>
+                            <button id="updateClientFilesBtn" class="btn-primary" style="background-color: var(--success-color, #22c55e); border-color: var(--success-color, #22c55e);" title="استخراج مجدد اطلاعات از فایل‌های PDF">
+                                <i data-lucide="refresh-cw"></i>
+                                <span>به‌روزرسانی از فایل‌ها</span>
+                            </button>
+                            <button id="renameClientBtn" class="btn-outline" title="تغییر نام موکل">
+                                <i data-lucide="pencil"></i>
+                                <span>تغییر نام پوشه</span>
+                            </button>
+                            <button id="deleteClientBtn" class="btn-danger" title="حذف کامل پرونده">
+                                <i data-lucide="trash-2"></i>
+                                <span>حذف موکل</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-body">
+                        <!-- Left Sub-panel: Client Metadata Form -->
+                        <div class="metadata-panel glass-card">
+                            <div class="card-header">
+                                <i data-lucide="user-check"></i>
+                                <h3>مشخصات استخراج شده (مشخصات موکل.txt)</h3>
+                            </div>
+                            
+                            <form id="metadataForm" class="metadata-form">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="field_first_name">نام</label>
+                                        <input type="text" id="field_first_name" data-key="first_name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="field_last_name">نام خانوادگی</label>
+                                        <input type="text" id="field_last_name" data-key="last_name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="field_id_number">شماره ملی</label>
+                                        <input type="text" id="field_id_number" data-key="id_number" class="ltr-text">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="field_fathername">نام پدر</label>
+                                        <input type="text" id="field_fathername" data-key="fathername">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="field_client_number">شماره مشتری / قرارداد</label>
+                                        <input type="text" id="field_client_number" data-key="client_number" class="ltr-text">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="field_contract_date">تاریخ قرارداد</label>
+                                        <input type="text" id="field_contract_date" data-key="contract_date" class="ltr-text" placeholder="140X/XX/XX">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="field_contract_amount">مبلغ قرارداد (ریال)</label>
+                                        <input type="text" id="field_contract_amount" data-key="contract_amount" class="ltr-text">
+                                    </div>
+                                    <div class="form-group form-group-full">
+                                        <label for="field_shomare_parvande">
+                                            <i data-lucide="hash" style="width:14px;height:14px;vertical-align:middle;"></i>
+                                            شماره’های پرونده (جداشده با کاما – قابل ویرایش)
+                                        </label>
+                                        <input type="text" id="field_shomare_parvande" data-key="shomare_parvande" class="ltr-text" placeholder="مثال: 140322920001653682, 140522920000543377">
+                                        <span class="field-hint">شماره‌های استخراج‌شده از اسناد به صورت خودکار اینجا اضافه می‌شوند. شما می‌توانید آن‌ها را ویرایش یا حذف کنید.</span>
+                                    </div>
+                                </div>
+
+                                <!-- Custom / Additional metadata fields container -->
+                                <div id="customFieldsContainer" class="custom-fields-container">
+                                    <!-- Dynamic fields go here -->
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="button" id="addCustomFieldBtn" class="btn-outline btn-sm">
+                                        <i data-lucide="plus"></i>
+                                        <span>افزودن فیلد سفارشی</span>
+                                    </button>
+                                    <button type="submit" id="saveMetadataBtn" class="btn-success">
+                                        <i data-lucide="check"></i>
+                                        <span>ذخیره تغییرات مشخصات</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Right Sub-panel: File Explorer & Add Files -->
+                        <div class="files-panel glass-card">
+                            <div class="card-header">
+                                <i data-lucide="files"></i>
+                                <h3>اسناد و فایل‌های پرونده</h3>
+                            </div>
+                            
+                            <div class="files-explorer">
+                                <ul id="fileList" class="file-list">
+                                    <!-- Files list item will be injected dynamically -->
+                                </ul>
+                                
+                                <!-- Client-specific drop zone -->
+                                <div id="clientDropZone" class="client-drop-zone">
+                                    <input type="file" id="clientFileInput" multiple style="display: none;">
+                                    <div class="client-drop-content">
+                                        <i data-lucide="plus-circle"></i>
+                                        <span>افزودن سند یا فایل جدید به این پرونده</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Photo Gallery Panel (Collapsible) -->
+                        <div class="photos-panel glass-card">
+                            <div class="card-header photos-toggle" id="photosToggleBtn">
+                                <i data-lucide="image"></i>
+                                <h3>پوشه عکس‌ها</h3>
+                                <span id="photosCountBadge" class="badge">0</span>
+                                <i data-lucide="chevron-down" class="toggle-icon" id="photosToggleIcon"></i>
+                            </div>
+                            <div class="photos-collapsible" id="photosCollapsible" style="display: none;">
+                                <div class="photos-gallery" id="photosGallery">
+                                    <!-- Photo thumbnails will be injected dynamically -->
+                                </div>
+                                <!-- Photo upload drop zone -->
+                                <div id="photoDropZone" class="photo-drop-zone">
+                                    <input type="file" id="photoFileInput" accept=".png,.jpg,.jpeg" multiple style="display: none;">
+                                    <div class="photo-drop-content">
+                                        <i data-lucide="image-plus"></i>
+                                        <span>افزودن عکس (PNG/JPG) به پرونده موکل</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- PDF/Document Preview Side Pane (Toggled) -->
+            <aside id="previewPane" class="preview-pane" style="display: none;">
+                <div class="preview-header">
+                    <div class="preview-title">
+                        <i data-lucide="eye"></i>
+                        <span id="previewFileName">پیش‌نمایش سند</span>
+                    </div>
+                    <button id="closePreviewBtn" title="بستن پیش‌نمایش">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="preview-body" id="previewBody">
+                    <!-- PDF iframe or Text content will be rendered here -->
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Edit Workspace Folder Modal -->
+    <div id="workspaceModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>تنظیم پوشه کاری سیستم</h3>
+                <button class="close-modal-btn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>پوشه‌ای که فایل‌ها و قراردادهای موکلین در آن ذخیره می‌شوند را مشخص کنید:</p>
+                <div class="form-group">
+                    <label for="workspacePathModalInput">مسیر پوشه کاری روی سیستم:</label>
+                    <input type="text" id="workspacePathModalInput" class="ltr-text" placeholder="مثال: C:\Users\sol46\Desktop\Clients">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-outline close-modal-btn">انصراف</button>
+                <button id="saveWorkspaceBtn" class="btn-primary">ثبت و به‌روزرسانی</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Manual Client Modal -->
+    <div id="newClientModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>ایجاد پرونده موکل به صورت دستی</h3>
+                <button class="close-modal-btn"><i data-lucide="x"></i></button>
+            </div>
+            <form id="newClientForm">
+                <div class="modal-body">
+                    <p>مشخصات اولیه پرونده موکل جدید را وارد کنید:</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="new_first_name">نام <span class="required">*</span></label>
+                            <input type="text" id="new_first_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new_last_name">نام خانوادگی <span class="required">*</span></label>
+                            <input type="text" id="new_last_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new_id_number">شماره ملی</label>
+                            <input type="text" id="new_id_number" class="ltr-text">
+                        </div>
+                        <div class="form-group">
+                            <label for="new_fathername">نام پدر</label>
+                            <input type="text" id="new_fathername">
+                        </div>
+                        <div class="form-group">
+                            <label for="new_client_number">شماره مشتری / قرارداد</label>
+                            <input type="text" id="new_client_number" class="ltr-text">
+                        </div>
+                        <div class="form-group">
+                            <label for="new_contract_date">تاریخ قرارداد</label>
+                            <input type="text" id="new_contract_date" class="ltr-text" placeholder="140X/XX/XX">
+                        </div>
+                        <div class="form-group">
+                            <label for="new_contract_amount">مبلغ قرارداد (ریال)</label>
+                            <input type="text" id="new_contract_amount" class="ltr-text">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-outline close-modal-btn">انصراف</button>
+                    <button type="submit" class="btn-primary">ایجاد پرونده</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manual Association Modal -->
+    <div id="associationModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>اتصال دستی سند به پرونده موکل</h3>
+                <button class="close-modal-btn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>سند غیرمرتبط شناسایی شد: <strong id="assocFileName" class="text-primary">نام فایل</strong></p>
+                <p>لطفاً پرونده موکل مربوطه را جهت متصل کردن این سند انتخاب کنید:</p>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="searchAssocClientInput">جستجوی موکل:</label>
+                    <div class="search-box">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="searchAssocClientInput" placeholder="جستجوی موکل (نام یا کد ملی)...">
+                    </div>
+                </div>
+                <div class="assoc-clients-list-container">
+                    <ul id="assocClientsList" class="assoc-clients-list">
+                        <!-- Clients dynamically populated -->
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline close-modal-btn">انصراف</button>
+                <button id="confirmAssocBtn" class="btn-primary" disabled>اتصال سند</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sana Settings Modal -->
+    <div id="sanaSettingsModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>تنظیمات ورود خودکار ثنا</h3>
+                <button class="close-modal-btn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-light);">
+                    برای ورود خودکار به کارتابل وکالت، کد ملی و رمز شخصی ثنا را وارد کنید. (اختیاری)
+                </p>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="sanaNationalCode">شماره ملی (ثبت شده در ثنا):</label>
+                    <input type="text" id="sanaNationalCode" class="form-control" placeholder="کد ملی خود را وارد کنید...">
+                </div>
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="sanaPassword">رمز شخصی (اخذ شده از ثنا):</label>
+                    <input type="password" id="sanaPassword" class="form-control" placeholder="رمز عبور ثنا...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline close-modal-btn">انصراف</button>
+                <button id="skipSanaSettingsBtn" class="btn-outline" style="border-color: var(--primary); color: var(--primary);">ادامه بدون ذخیره</button>
+                <button id="saveSanaSettingsBtn" class="btn-primary">ذخیره تنظیمات</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Assignment Modal -->
+    <div id="assignClientModal" class="modal-overlay" style="display: none; z-index: 10000;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>انتخاب موکل برای فایل</h3>
+                <button class="close-modal-btn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>لطفاً مشخص کنید این فایل متعلق به کدام موکل است:</p>
+                <p><strong id="pendingFileNameDisplay" class="text-primary"></strong></p>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <div class="search-box">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="searchAssignClientInput" placeholder="جستجو...">
+                    </div>
+                </div>
+                <div class="assoc-clients-list-container" style="max-height: 200px; overflow-y: auto;">
+                    <ul id="assignClientsList" class="assoc-clients-list"></ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="skipAssignBtn" class="btn-outline">رد کردن این فایل</button>
+                <button id="confirmAssignBtn" class="btn-primary" disabled>تایید و ادامه</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Buttons -->
+    <div class="floating-actions-container" style="position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;">
+        <button id="cancelAutomationBtn" class="floating-cancel-btn" style="display: none; position: static;" title="توقف اتوماسیون">
+            <i data-lucide="stop-circle"></i>
+            <span>متوقف کردن اتوماسیون</span>
+        </button>
+    </div>
+
+    <!-- Script Entry -->
+    <script src="app.js"></script>
+</body>
+</html>
